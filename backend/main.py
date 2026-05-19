@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from pydantic import BaseModel
 from passlib.context import CryptContext
 from backend.database import get_db, engine
-from backend.models import Base, User, ListenHistory
+from backend.models import Base
 from backend.agent import load_agent, save_agent
 from backend.context import build_context_vector
 from datetime import datetime
