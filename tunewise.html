@@ -1,0 +1,2685 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tunewise — RL Music</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --bg2: #111111;
+            --bg3: #181818;
+            --surface: #1c1c1c;
+            --surface2: #242424;
+            --surface3: #2a2a2a;
+            --border: rgba(255, 255, 255, 0.07);
+            --border-md: rgba(255, 255, 255, 0.13);
+            --text: #ffffff;
+            --text-muted: #a0a0a0;
+            --text-hint: #606060;
+            --accent: #1db954;
+            --accent-dark: #169a44;
+            --accent-dim: rgba(29, 185, 84, 0.15);
+            --danger: #ff4444;
+            --warn: #ff9933;
+            --info: #3b82f6;
+            --card-radius: 14px;
+            --radius: 8px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+        }
+
+        /* ===== SCROLLBAR ===== */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--surface3);
+            border-radius: 10px;
+        }
+
+        /* ===== AUTH ===== */
+        #auth-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(29, 185, 84, 0.18) 0%, transparent 70%), var(--bg);
+        }
+
+        .auth-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 360px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .auth-logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-logo span {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.75rem;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 0.6rem 0;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-hint);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all 0.2s;
+        }
+
+        .auth-tab.active {
+            color: var(--text);
+            border-bottom-color: var(--accent);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border: 1px solid var(--border-md);
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg3);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-top: 0.5rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+        }
+
+        .auth-error {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: 0.75rem;
+            text-align: center;
+        }
+
+        /* ===== APP LAYOUT ===== */
+        #app-screen {
+            display: none;
+        }
+
+        .app-layout {
+            display: grid;
+            grid-template-columns: 240px 1fr 300px;
+            min-height: 100vh;
+        }
+
+        /* ===== LEFT SIDEBAR ===== */
+        .sidebar {
+            background: var(--bg2);
+            border-right: 0.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 1.5rem;
+        }
+
+        .sidebar-logo-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-logo span {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+        }
+
+        .sidebar-nav {
+            padding: 0.5rem 0;
+            flex: 1;
+        }
+
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+            padding: 1rem 1.5rem 0.4rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.55rem 1.5rem;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.15s;
+            border-left: 2px solid transparent;
+            text-decoration: none;
+            border-radius: 0;
+        }
+
+        .nav-item:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+            color: var(--text);
+            font-weight: 600;
+            border-left-color: var(--accent);
+            background: rgba(29, 185, 84, 0.07);
+        }
+
+        .nav-item svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* Library section */
+        .library-section {
+            padding: 1rem 1.5rem;
+            border-top: 0.5px solid var(--border);
+        }
+
+        .library-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .library-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .library-filter-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 0.75rem;
+        }
+
+        .filter-chip {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 0.5px solid var(--border-md);
+            background: none;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .filter-chip.active {
+            background: var(--text);
+            color: var(--bg);
+            border-color: var(--text);
+        }
+
+        .library-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .library-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .library-item:hover {
+            background: var(--surface2);
+        }
+
+        .lib-art {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--surface3);
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .lib-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .lib-name {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lib-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-bottom {
+            padding: 1rem 1.5rem;
+            border-top: 0.5px solid var(--border);
+        }
+
+        .user-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--surface3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 11px;
+            color: var(--text-hint);
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: var(--text-hint);
+            border-radius: 4px;
+            transition: color 0.15s;
+        }
+
+        .logout-btn:hover {
+            color: var(--danger);
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            overflow-y: auto;
+            height: 100vh;
+            padding-bottom: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* ===== TOP NAV ===== */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 2rem 0;
+            position: sticky;
+            top: 0;
+            background: var(--bg2);
+            z-index: 10;
+            padding-bottom: 1rem;
+            border-bottom: 0.5px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .top-nav-arrows {
+            display: flex;
+            gap: 6px;
+        }
+
+        .nav-arrow {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .nav-arrow:hover {
+            color: var(--text);
+            border-color: var(--border-md);
+        }
+
+        .top-nav-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .upgrade-btn {
+            padding: 6px 14px;
+            border-radius: 20px;
+            background: var(--text);
+            color: var(--bg);
+            border: none;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.2px;
+        }
+
+        /* ===== BANNER ===== */
+        .banner-wrap {
+            padding: 0 2rem 1.5rem;
+        }
+
+        .banner {
+            background: linear-gradient(130deg, #b5f54a 0%, #1db954 50%, #0e8f3c 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            position: relative;
+            min-height: 120px;
+        }
+
+        .banner::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 45%;
+            background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1));
+        }
+
+        .banner-text {
+            z-index: 1;
+        }
+
+        .banner-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(0, 0, 0, 0.6);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .banner-heading {
+            font-family: 'Syne', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            color: #0a1a00;
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+
+        .banner-img {
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            opacity: 0.9;
+        }
+
+        /* ===== GREETING ===== */
+        .greeting-row {
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .greeting-text {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+        }
+
+        .show-all-btn {
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .show-all-btn:hover {
+            color: var(--text);
+        }
+
+        /* ===== SONG TABLE ===== */
+        .song-table-wrap {
+            padding: 0 2rem;
+        }
+
+        .song-table-header {
+            background: var(--surface);
+            border-radius: 12px 12px 0 0;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .song-table-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .see-all-btn {
+            font-size: 11px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 0.5px solid var(--border-md);
+            background: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s;
+        }
+
+        .see-all-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .song-table-cols {
+            background: var(--surface);
+            padding: 0.5rem 1.25rem;
+            display: grid;
+            grid-template-columns: 28px 1fr 80px 50px;
+            gap: 12px;
+            align-items: center;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .col-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+        }
+
+        .song-rows {
+            background: var(--surface);
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        .song-row {
+            display: grid;
+            grid-template-columns: 28px 1fr 80px 50px;
+            gap: 12px;
+            align-items: center;
+            padding: 0.65rem 1.25rem;
+            cursor: pointer;
+            transition: background 0.12s;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .song-row:last-child {
+            border-bottom: none;
+        }
+
+        .song-row:hover {
+            background: var(--surface2);
+        }
+
+        .song-row.playing {
+            background: rgba(29, 185, 84, 0.1);
+        }
+
+        .row-num {
+            font-size: 13px;
+            color: var(--text-hint);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .song-row.playing .row-num {
+            color: var(--accent);
+        }
+
+        .row-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .row-art {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background: var(--surface3);
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-hint);
+        }
+
+        .row-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .row-text {
+            min-width: 0;
+        }
+
+        .row-name {
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .row-artist {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .row-fav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fav-icon {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            color: var(--text-hint);
+            transition: color 0.15s;
+            flex-shrink: 0;
+        }
+
+        .fav-icon.active {
+            color: var(--danger);
+            fill: var(--danger);
+        }
+
+        .fav-icon:hover {
+            color: var(--danger);
+        }
+
+        .row-time {
+            font-size: 12px;
+            color: var(--text-hint);
+            font-family: 'Inter', sans-serif;
+            text-align: right;
+        }
+
+        /* ===== SEARCH ===== */
+        .search-wrap {
+            padding: 0 2rem 1.5rem;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border: 0.5px solid var(--border-md);
+            border-radius: 30px;
+            padding: 0 1.25rem;
+            height: 40px;
+            transition: border-color 0.15s;
+        }
+
+        .search-bar:focus-within {
+            border-color: var(--accent);
+        }
+
+        .search-bar svg {
+            color: var(--text-hint);
+            flex-shrink: 0;
+        }
+
+        .search-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: none;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+        }
+
+        /* ===== RIGHT PANEL — NOW PLAYING ===== */
+        .right-panel {
+            background: var(--bg2);
+            border-left: 0.5px solid var(--border);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .np-header {
+            padding: 1.5rem;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .np-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+            margin-bottom: 4px;
+        }
+
+        .np-song-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            line-height: 1.2;
+        }
+
+        .np-song-artist {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .np-art-big {
+            margin: 1.5rem;
+            aspect-ratio: 1;
+            background: var(--surface3);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .np-art-big img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .np-art-placeholder-big {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Syne', sans-serif;
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--text-hint);
+        }
+
+        /* ===== PROGRESS BAR ===== */
+        .np-progress-wrap {
+            padding: 0 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .progress-track {
+            height: 3px;
+            background: var(--surface3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s linear;
+        }
+
+        .progress-times {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: var(--text-hint);
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* ===== CONTROLS ===== */
+        .np-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 0 1.5rem 1.25rem;
+        }
+
+        .ctrl-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            border-radius: 50%;
+            padding: 4px;
+        }
+
+        .ctrl-btn:hover {
+            color: var(--text);
+            transform: scale(1.1);
+        }
+
+        .ctrl-btn.play-btn {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            padding: 0;
+        }
+
+        .ctrl-btn.play-btn:hover {
+            background: var(--accent-dark);
+            transform: scale(1.05);
+        }
+
+        /* ===== FEEDBACK ACTIONS ===== */
+        .np-feedback {
+            padding: 0 1.5rem 1.25rem;
+        }
+
+        .feedback-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+            margin-bottom: 10px;
+        }
+
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .fb-btn {
+            padding: 7px 0;
+            border-radius: 8px;
+            border: 0.5px solid var(--border-md);
+            background: var(--surface);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .fb-btn:hover {
+            background: var(--surface2);
+            color: var(--text);
+        }
+
+        .fb-btn.fav {
+            border-color: rgba(59, 130, 246, 0.4);
+            color: var(--info);
+        }
+
+        .fb-btn.fav:hover {
+            background: rgba(59, 130, 246, 0.12);
+        }
+
+        .fb-btn.complete {
+            border-color: rgba(29, 185, 84, 0.4);
+            color: var(--accent);
+        }
+
+        .fb-btn.complete:hover {
+            background: var(--accent-dim);
+        }
+
+        .fb-btn.skip-h {
+            border-color: rgba(255, 153, 51, 0.4);
+            color: var(--warn);
+        }
+
+        .fb-btn.skip-h:hover {
+            background: rgba(255, 153, 51, 0.1);
+        }
+
+        .fb-btn.skip-e {
+            border-color: rgba(255, 68, 68, 0.4);
+            color: var(--danger);
+        }
+
+        .fb-btn.skip-e:hover {
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .fb-btn.remove {
+            grid-column: 1 / -1;
+            border-color: rgba(255, 68, 68, 0.3);
+            color: var(--danger);
+        }
+
+        .fb-btn.remove:hover {
+            background: rgba(255, 68, 68, 0.08);
+        }
+
+        /* ===== AGENT STATUS (right panel) ===== */
+        .agent-status-wrap {
+            padding: 1rem 1.5rem;
+            border-top: 0.5px solid var(--border);
+        }
+
+        .agent-status-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+            margin-bottom: 8px;
+        }
+
+        .learning-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .learning-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .refresh-counter {
+            font-size: 11px;
+            color: var(--text-hint);
+            font-family: 'Inter', sans-serif;
+            margin-top: 5px;
+        }
+
+        /* ===== COLD START ===== */
+        .cold-start-wrap {
+            padding: 0 2rem 2rem;
+        }
+
+        .cold-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .cold-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: 12px;
+            padding: 0.875rem;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+
+        .cold-card:hover {
+            background: var(--surface2);
+            border-color: var(--border-md);
+            transform: translateY(-2px);
+        }
+
+        .cold-art {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            background: var(--surface3);
+            margin-bottom: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-hint);
+            font-family: 'Syne', sans-serif;
+        }
+
+        .cold-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .cold-name {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cold-artist {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cold-genre {
+            font-size: 10px;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        /* ===== HISTORY PAGE ===== */
+        .page-header {
+            padding: 0 2rem 1.5rem;
+        }
+
+        .page-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .history-list-wrap {
+            padding: 0 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--radius);
+            transition: background 0.12s;
+        }
+
+        .history-item:hover {
+            background: var(--surface2);
+        }
+
+        .reward-pill {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            flex-shrink: 0;
+        }
+
+        .reward-pos {
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        .reward-neg {
+            background: rgba(255, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .reward-neu {
+            background: var(--surface3);
+            color: var(--text-muted);
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: var(--text-hint);
+            margin-left: auto;
+            white-space: nowrap;
+        }
+
+        /* ===== ADMIN DASHBOARD ===== */
+        .admin-wrap {
+            padding: 0 2rem 2rem;
+        }
+
+        .admin-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--card-radius);
+            padding: 1.1rem 1.25rem;
+        }
+
+        .metric-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-hint);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            font-family: 'Syne', sans-serif;
+        }
+
+        .metric-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        .metric-trend-up {
+            color: var(--accent);
+        }
+
+        .metric-trend-down {
+            color: var(--danger);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .chart-card {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--card-radius);
+            padding: 1.25rem;
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 1rem;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 200px;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .users-table th {
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .users-table td {
+            padding: 10px 12px;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .users-table tr:hover td {
+            background: var(--surface2);
+        }
+
+        .progress-bar-wrap {
+            width: 70px;
+            background: var(--surface2);
+            border-radius: 4px;
+            height: 4px;
+        }
+
+        .progress-bar-fill {
+            height: 4px;
+            border-radius: 4px;
+            background: var(--accent);
+        }
+
+        /* ===== MISC ===== */
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-hint);
+            font-size: 13px;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 15px;
+            height: 15px;
+            border: 2px solid var(--surface3);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-hint);
+            font-size: 13px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            color: var(--text);
+            border: 0.5px solid var(--border-md);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: all 0.25s;
+            z-index: 200;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Search results */
+        .search-results-section {
+            padding: 0 2rem 2rem;
+        }
+
+        /* Inline section label */
+        .section-lbl {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            color: var(--text-hint);
+            margin-bottom: 0.75rem;
+        }
+
+        /* Rec badge */
+        .rec-refresh-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .refresh-btn-sm {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: none;
+            border: 0.5px solid var(--border-md);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 11px;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.15s;
+        }
+
+        .refresh-btn-sm:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .refresh-btn-sm.spinning svg {
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Admin page doesn't use right panel */
+        #app-screen.admin-mode .app-layout {
+            grid-template-columns: 240px 1fr;
+        }
+
+        #app-screen.admin-mode .right-panel {
+            display: none;
+        }
+
+        /* No-song placeholder in right panel */
+        .np-idle {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--text-hint);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .np-idle svg {
+            opacity: 0.3;
+        }
+
+        .np-idle p {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Volume */
+        .np-volume-wrap {
+            padding: 0 1.5rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vol-icon {
+            color: var(--text-hint);
+            flex-shrink: 0;
+        }
+
+        .vol-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 3px;
+            border-radius: 4px;
+            background: var(--surface3);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .vol-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--text);
+            cursor: pointer;
+        }
+
+        audio {
+            display: none;
+        }
+
+        /* Genre tag */
+        .genre-tag {
+            font-size: 10px;
+            padding: 2px 7px;
+            background: var(--surface3);
+            border-radius: 4px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* Popularity */
+        .pop-val {
+            font-size: 11px;
+            color: var(--text-hint);
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Feature bars in admin */
+        .pref-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .pref-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            width: 90px;
+            flex-shrink: 0;
+        }
+
+        .pref-track {
+            flex: 1;
+            height: 4px;
+            background: var(--surface3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .pref-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .pref-val {
+            font-size: 10px;
+            font-family: 'Inter', monospace;
+            color: var(--text-hint);
+            width: 36px;
+            text-align: right;
+        }
+
+        .user-detail-section {
+            margin-top: 1.25rem;
+        }
+
+        /* Admin table wrapper */
+        .table-wrap {
+            background: var(--surface);
+            border: 0.5px solid var(--border);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+        }
+
+        /* ===== SEARCH IN MAIN AREA =====*/
+        .main-search-results {
+            padding: 0 2rem 2rem;
+        }
+
+        /* Rec song row in main area */
+        .rec-song-row {
+            display: grid;
+            grid-template-columns: 28px 1fr auto auto;
+            gap: 12px;
+            align-items: center;
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .rec-song-row:hover {
+            background: var(--surface);
+        }
+
+        .rec-song-row.playing {
+            background: rgba(29, 185, 84, 0.08);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== AUTH ===== -->
+    <div id="auth-screen">
+        <div class="auth-card">
+            <div class="auth-logo">
+                <div class="auth-logo-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                        <path
+                            d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm4.5 12.74c-.18.28-.54.37-.82.2-2.25-1.38-5.08-1.69-8.41-.93-.32.07-.64-.13-.71-.45-.07-.32.13-.64.45-.71 3.65-.83 6.78-.47 9.3 1.07.28.18.37.53.19.82zm1.2-2.67c-.23.35-.69.46-1.04.23-2.57-1.58-6.49-2.04-9.54-1.12-.39.12-.81-.11-.93-.5-.12-.39.11-.81.5-.93 3.48-1.06 7.81-.54 10.78 1.28.35.22.46.68.23 1.04zm.1-2.78c-3.08-1.83-8.16-2-11.1-1.1-.47.14-.97-.13-1.11-.6-.14-.47.13-.97.6-1.11 3.37-1.02 8.97-.82 12.51 1.27.42.25.56.79.31 1.21-.25.42-.79.56-1.21.31z" />
+                    </svg>
+                </div>
+                <span>Tunewise</span>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Sign in</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Create account</button>
+            </div>
+            <div id="login-form">
+                <div class="form-group"><label>Username</label><input type="text" id="login-user"
+                        placeholder="username" /></div>
+                <div class="form-group"><label>Password</label><input type="password" id="login-pass"
+                        placeholder="password" /></div>
+                <button class="btn-primary" onclick="doLogin()">Sign in</button>
+            </div>
+            <div id="register-form" style="display:none">
+                <div class="form-group"><label>Username</label><input type="text" id="reg-user"
+                        placeholder="choose a username" /></div>
+                <div class="form-group"><label>Password</label><input type="password" id="reg-pass"
+                        placeholder="choose a password" /></div>
+                <button class="btn-primary" onclick="doRegister()">Create account</button>
+            </div>
+            <div class="auth-error" id="auth-err"></div>
+        </div>
+    </div>
+
+    <!-- ===== APP ===== -->
+    <div id="app-screen">
+        <div class="app-layout">
+
+            <!-- LEFT SIDEBAR -->
+            <aside class="sidebar">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm4.5 12.74c-.18.28-.54.37-.82.2-2.25-1.38-5.08-1.69-8.41-.93-.32.07-.64-.13-.71-.45-.07-.32.13-.64.45-.71 3.65-.83 6.78-.47 9.3 1.07.28.18.37.53.19.82zm1.2-2.67c-.23.35-.69.46-1.04.23-2.57-1.58-6.49-2.04-9.54-1.12-.39.12-.81-.11-.93-.5-.12-.39.11-.81.5-.93 3.48-1.06 7.81-.54 10.78 1.28.35.22.46.68.23 1.04zm.1-2.78c-3.08-1.83-8.16-2-11.1-1.1-.47.14-.97-.13-1.11-.6-.14-.47.13-.97.6-1.11 3.37-1.02 8.97-.82 12.51 1.27.42.25.56.79.31 1.21-.25.42-.79.56-1.21.31z" />
+                        </svg>
+                    </div>
+                    <span>Tunewise</span>
+                </div>
+                <nav class="sidebar-nav">
+                    <div class="nav-section-label">Menu</div>
+                    <a class="nav-item active" onclick="showPage('discover')" id="nav-discover">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                        </svg>
+                        Explore
+                    </a>
+                    <a class="nav-item" onclick="showPage('history')" id="nav-history">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        History
+                    </a>
+                    <a class="nav-item" id="nav-genres" onclick="showPage('discover')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18V5l12-2v13" />
+                            <circle cx="6" cy="18" r="3" />
+                            <circle cx="18" cy="16" r="3" />
+                        </svg>
+                        Genres
+                    </a>
+                    <a class="nav-item" id="nav-artist" onclick="showPage('discover')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        Artists
+                    </a>
+                    <div id="nav-admin-section" style="display:none">
+                        <div class="nav-section-label" style="margin-top:8px">Admin</div>
+                        <a class="nav-item" onclick="showPage('admin')" id="nav-admin">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" />
+                                <rect x="14" y="3" width="7" height="7" />
+                                <rect x="14" y="14" width="7" height="7" />
+                                <rect x="3" y="14" width="7" height="7" />
+                            </svg>
+                            Dashboard
+                        </a>
+                    </div>
+                </nav>
+
+                <!-- Your Library -->
+                <div class="library-section">
+                    <div class="library-header">
+                        <div class="library-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path d="M3 6h18M3 12h18M3 18h18" />
+                            </svg>
+                            Your Library
+                        </div>
+                        <div style="display:flex;gap:4px">
+                            <button
+                                style="width:26px;height:26px;border-radius:50%;background:var(--surface2);border:none;color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.15s"
+                                onclick="">+</button>
+                        </div>
+                    </div>
+                    <div class="library-filter-row">
+                        <button class="filter-chip active">Playlists</button>
+                        <button class="filter-chip">Albums</button>
+                        <button class="filter-chip">Artists</button>
+                    </div>
+                    <div class="library-list" id="library-list">
+                        <div class="library-item">
+                            <div class="lib-art" style="background:linear-gradient(135deg,#1db954,#0e8f3c)">♪</div>
+                            <div class="lib-info">
+                                <div class="lib-name">Liked Songs</div>
+                                <div class="lib-sub">Playlist</div>
+                            </div>
+                        </div>
+                        <div class="library-item">
+                            <div class="lib-art" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">★</div>
+                            <div class="lib-info">
+                                <div class="lib-name">Favourites</div>
+                                <div class="lib-sub">Playlist · 0 songs</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        style="margin-top:6px;font-size:11px;color:var(--text-hint);display:flex;align-items:center;gap:6px;padding:4px 4px">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <span>Search library</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-bottom">
+                    <div class="user-chip">
+                        <div class="user-avatar" id="sidebar-avatar">?</div>
+                        <div class="user-info">
+                            <div class="user-name" id="sidebar-username">User</div>
+                            <div class="user-role" id="sidebar-role">Listener</div>
+                        </div>
+                        <button class="logout-btn" onclick="doLogout()" title="Sign out">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                <polyline points="16 17 21 12 16 7" />
+                                <line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="sidebar-agent-status" style="margin-top:8px;font-size:11px;color:var(--text-hint)">No
+                        interactions yet</div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="main-content">
+
+                <!-- DISCOVER PAGE -->
+                <div class="page active" id="page-discover">
+                    <div class="top-nav">
+                        <div class="top-nav-arrows">
+                            <button class="nav-arrow">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg>
+                            </button>
+                            <button class="nav-arrow">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div style="flex:1;max-width:300px;margin:0 1.5rem">
+                            <div class="search-bar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                                <input type="text" placeholder="Search songs or artists…" id="search-input"
+                                    oninput="onSearchInput(this.value)" />
+                            </div>
+                        </div>
+                        <div class="top-nav-right">
+                            <button class="upgrade-btn">Upgrade</button>
+                            <div class="user-avatar" id="top-avatar"
+                                style="width:30px;height:30px;font-size:12px;background:var(--surface2);flex-shrink:0">?
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Banner -->
+                    <div class="banner-wrap">
+                        <div class="banner">
+                            <div class="banner-text">
+                                <div class="banner-label">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(0,0,0,0.6)">
+                                        <path
+                                            d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm4.5 12.74c-.18.28-.54.37-.82.2-2.25-1.38-5.08-1.69-8.41-.93-.32.07-.64-.13-.71-.45-.07-.32.13-.64.45-.71 3.65-.83 6.78-.47 9.3 1.07.28.18.37.53.19.82zm1.2-2.67c-.23.35-.69.46-1.04.23-2.57-1.58-6.49-2.04-9.54-1.12-.39.12-.81-.11-.93-.5-.12-.39.11-.81.5-.93 3.48-1.06 7.81-.54 10.78 1.28.35.22.46.68.23 1.04zm.1-2.78c-3.08-1.83-8.16-2-11.1-1.1-.47.14-.97-.13-1.11-.6-.14-.47.13-.97.6-1.11 3.37-1.02 8.97-.82 12.51 1.27.42.25.56.79.31 1.21-.25.42-.79.56-1.21.31z" />
+                                    </svg>
+                                    Tunewise RL
+                                </div>
+                                <div class="banner-heading">AI learns<br />your taste</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Greeting row -->
+                    <div class="greeting-row">
+                        <div class="greeting-text" id="discover-greeting">Good afternoon</div>
+                        <button class="show-all-btn" onclick="">Show All</button>
+                    </div>
+
+                    <!-- Search results (hidden by default) -->
+                    <div class="main-search-results" id="search-results" style="display:none">
+                        <div class="section-lbl">Search results</div>
+                        <div id="search-results-list"></div>
+                    </div>
+
+                    <!-- Cold start -->
+                    <div id="cold-start-section" class="cold-start-wrap">
+                        <div class="section-lbl" style="margin-bottom:0.75rem" id="cold-start-label">Choose a song to
+                            begin</div>
+                        <div class="cold-grid" id="cold-start-grid">
+                            <div class="loader">
+                                <div class="spinner"></div> Loading songs…
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations (in main area, once playing) -->
+                    <div id="player-main-section" style="display:none">
+                        <div class="song-table-wrap" style="margin-bottom:1.5rem">
+                            <div class="song-table-header">
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <span class="song-table-title">Recommended for you</span>
+                                    <span id="rec-count-badge" style="font-size:11px;color:var(--text-hint)"></span>
+                                    <div id="learning-indicator" style="display:none">
+                                        <div class="learning-badge">
+                                            <div class="learning-dot"></div> Adapting
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="refresh-btn-sm" id="refresh-btn" onclick="refreshRecs()">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M23 4v6h-6" />
+                                        <path d="M1 20v-6h6" />
+                                        <path
+                                            d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                                    </svg>
+                                    Refresh
+                                </button>
+                            </div>
+                            <div class="song-table-cols">
+                                <div class="col-label">#</div>
+                                <div class="col-label">Title</div>
+                                <div class="col-label">Genre</div>
+                                <div class="col-label" style="text-align:right">Pop.</div>
+                            </div>
+                            <div class="song-rows" id="rec-list">
+                                <div class="loader">
+                                    <div class="spinner"></div> Loading…
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /discover -->
+
+                <!-- HISTORY PAGE -->
+                <div class="page" id="page-history">
+                    <div class="top-nav">
+                        <div class="top-nav-arrows">
+                            <button class="nav-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg></button>
+                            <button class="nav-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg></button>
+                        </div>
+                    </div>
+                    <div class="page-header">
+                        <div class="page-title">History</div>
+                        <div class="page-subtitle">Your recent interactions &amp; agent feedback signals</div>
+                    </div>
+                    <div class="history-list-wrap" id="history-list">
+                        <div class="loader">
+                            <div class="spinner"></div> Loading…
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ADMIN PAGE -->
+                <div class="page" id="page-admin">
+                    <div class="top-nav">
+                        <div class="top-nav-arrows">
+                            <button class="nav-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="15 18 9 12 15 6" />
+                                </svg></button>
+                            <button class="nav-arrow"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2.5">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg></button>
+                        </div>
+                        <button onclick="loadAdminData()"
+                            style="margin-left:auto;padding:7px 14px;border:0.5px solid var(--border-md);border-radius:8px;background:none;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text-muted);transition:all 0.15s"
+                            onmouseover="this.style.color='white'" onmouseout="this.style.color=''">Refresh</button>
+                    </div>
+                    <div class="page-header">
+                        <div class="page-title">Admin Dashboard</div>
+                        <div class="page-subtitle">Per-user LinUCB agent performance &amp; reward analytics</div>
+                    </div>
+                    <div class="admin-wrap">
+                        <div class="admin-grid-4" id="admin-metrics">
+                            <div class="loader" style="grid-column:1/-1">
+                                <div class="spinner"></div> Loading…
+                            </div>
+                        </div>
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <div class="chart-title">Reward over interactions (per user)</div>
+                                <div class="chart-wrap"><canvas id="reward-chart"></canvas></div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-title">Action breakdown</div>
+                                <div class="chart-wrap"><canvas id="action-chart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="chart-card" style="margin-bottom:1.5rem">
+                            <div class="chart-title">Avg reward by user</div>
+                            <div class="chart-wrap" style="height:140px"><canvas id="user-bar-chart"></canvas></div>
+                        </div>
+                        <div class="table-wrap" style="margin-bottom:1.5rem">
+                            <table class="users-table" id="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Avg reward</th>
+                                        <th>Completion</th>
+                                        <th>Top preferences</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div id="user-detail-section"></div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- RIGHT PANEL — NOW PLAYING -->
+            <aside class="right-panel" id="right-panel">
+
+                <!-- Idle state -->
+                <div class="np-idle" id="np-idle">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12l4-4 4 4" />
+                        <path d="M12 8v8" />
+                    </svg>
+                    <p>Pick a song from the list to start listening</p>
+                </div>
+
+                <!-- Now playing -->
+                <div id="np-section" style="display:none;flex-direction:column;flex:1">
+                    <div class="np-header">
+                        <div class="np-label">Now Playing</div>
+                        <div class="np-song-title" id="np-title">—</div>
+                        <div class="np-song-artist" id="np-artist">—</div>
+                    </div>
+
+                    <div class="np-art-big" id="np-art-big">
+                        <div class="np-art-placeholder-big" id="np-art-placeholder">♪</div>
+                        <img id="np-art-img" src="" alt=""
+                            style="display:none;width:100%;height:100%;object-fit:cover" />
+                    </div>
+
+                    <!-- Progress -->
+                    <div class="np-progress-wrap">
+                        <div class="progress-track" id="progress-track">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-times">
+                            <span id="prog-current">0:00</span>
+                            <span id="prog-total">0:30</span>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="np-controls">
+                        <button class="ctrl-btn" title="Shuffle">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="16 3 21 3 21 8" />
+                                <line x1="4" y1="20" x2="21" y2="3" />
+                                <polyline points="21 16 21 21 16 21" />
+                                <line x1="4" y1="4" x2="9" y2="9" />
+                            </svg>
+                        </button>
+                        <button class="ctrl-btn" title="Previous" onclick="prevSong()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polygon points="19 20 9 12 19 4 19 20" />
+                                <line x1="5" y1="19" x2="5" y2="5" />
+                            </svg>
+                        </button>
+                        <button class="ctrl-btn play-btn" id="play-pause-btn" onclick="togglePlayPause()">
+                            <svg id="play-icon" width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="none">
+                                <polygon points="5 3 19 12 5 21 5 3" />
+                            </svg>
+                            <svg id="pause-icon" width="22" height="22" viewBox="0 0 24 24" fill="white" stroke="none"
+                                style="display:none">
+                                <rect x="6" y="4" width="4" height="16" />
+                                <rect x="14" y="4" width="4" height="16" />
+                            </svg>
+                        </button>
+                        <button class="ctrl-btn" title="Next" onclick="nextSong()">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polygon points="5 4 15 12 5 20 5 4" />
+                                <line x1="19" y1="5" x2="19" y2="19" />
+                            </svg>
+                        </button>
+                        <button class="ctrl-btn" title="Repeat">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="17 1 21 5 17 9" />
+                                <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                                <polyline points="7 23 3 19 7 15" />
+                                <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Volume -->
+                    <div class="np-volume-wrap">
+                        <svg class="vol-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        </svg>
+                        <input type="range" class="vol-slider" id="vol-slider" min="0" max="100" value="80"
+                            oninput="setVolume(this.value)" />
+                        <svg class="vol-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                        </svg>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div class="np-feedback">
+                        <div class="feedback-label">Send feedback to agent</div>
+                        <div class="feedback-grid">
+                            <button class="fb-btn fav" onclick="sendFeedback(3.0,'favourite')">★ Favourite +3</button>
+                            <button class="fb-btn complete" onclick="sendFeedback(2.0,'complete')">✓ Completed
+                                +2</button>
+                            <button class="fb-btn skip-h" onclick="sendFeedback(0.5,'skip_half')">⏭ Half skip
+                                +0.5</button>
+                            <button class="fb-btn skip-e" onclick="sendFeedback(-1.0,'skip_early')">✕ Skip early
+                                −1</button>
+                            <button class="fb-btn remove" onclick="sendFeedback(-2.0,'remove')">⊘ Remove from recs
+                                −2</button>
+                        </div>
+                    </div>
+
+                    <!-- Agent status -->
+                    <div class="agent-status-wrap">
+                        <div class="agent-status-label">Agent status</div>
+                        <div id="agent-badge-wrap" style="display:none">
+                            <div class="learning-badge">
+                                <div class="learning-dot"></div> Agent learning
+                            </div>
+                        </div>
+                        <div class="refresh-counter" id="refresh-counter"></div>
+                        <div style="font-size:11px;color:var(--text-hint);margin-top:4px" id="interaction-count-label">
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+    </div>
+
+    <audio id="audio-player"></audio>
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        let currentUser = null;
+        let currentSong = null;
+        let currentRecList = [];
+        let currentRecIndex = -1;
+        let interactionCount = 0;
+        let rewardChart = null, actionChart = null, userBarChart = null;
+        let searchTimer = null;
+        let isPlaying = false;
+        let progressTimer = null;
+
+        // ===== AUTH =====
+        function switchAuthTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register')));
+            document.getElementById('login-form').style.display = tab === 'login' ? '' : 'none';
+            document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+            document.getElementById('auth-err').textContent = '';
+        }
+
+        async function doLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value;
+            if (!u || !p) { showAuthErr('Enter username and password'); return; }
+            try {
+                const res = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+                const data = await res.json();
+                if (!res.ok) { showAuthErr(data.detail || 'Login failed'); return; }
+                loginSuccess(data);
+            } catch (e) { showAuthErr('Cannot reach backend at ' + API); }
+        }
+
+        async function doRegister() {
+            const u = document.getElementById('reg-user').value.trim();
+            const p = document.getElementById('reg-pass').value;
+            if (!u || !p) { showAuthErr('Fill in both fields'); return; }
+            try {
+                const res = await fetch(`${API}/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+                const data = await res.json();
+                if (!res.ok) { showAuthErr(data.detail || 'Registration failed'); return; }
+                loginSuccess(data);
+            } catch (e) { showAuthErr('Cannot reach backend at ' + API); }
+        }
+
+        function loginSuccess(data) {
+            currentUser = data;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            document.getElementById('sidebar-username').textContent = data.username;
+            document.getElementById('sidebar-avatar').textContent = data.username[0].toUpperCase();
+            document.getElementById('top-avatar').textContent = data.username[0].toUpperCase();
+            const isAdmin = data.username === 'admin';
+            document.getElementById('sidebar-role').textContent = isAdmin ? 'Administrator' : 'Listener';
+            document.getElementById('nav-admin-section').style.display = isAdmin ? '' : 'none';
+            setGreeting();
+            if (isAdmin) {
+                document.getElementById('app-screen').classList.add('admin-mode');
+                showPage('admin');
+            } else {
+                startForUser();
+            }
+        }
+
+        async function startForUser() {
+            try {
+                const res = await fetch(`${API}/history/${currentUser.user_id}`);
+                const rows = await res.json();
+                const hasHistory = Array.isArray(rows) && rows.length > 0;
+                if (hasHistory) {
+                    interactionCount = rows.length;
+                    document.getElementById('cold-start-section').style.display = 'none';
+                    document.getElementById('player-main-section').style.display = 'block';
+                    document.getElementById('learning-indicator').style.display = '';
+                    document.getElementById('agent-badge-wrap').style.display = 'block';
+                    updateAgentStatus();
+                    loadRecommendations();
+                } else {
+                    loadColdStart();
+                }
+            } catch (e) { loadColdStart(); }
+        }
+
+        function showAuthErr(msg) { document.getElementById('auth-err').textContent = msg; }
+        function doLogout() { currentUser = null; currentSong = null; location.reload(); }
+
+        // ===== NAV =====
+        function showPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            document.getElementById('nav-' + page)?.classList.add('active');
+            // Right panel only on discover
+            document.getElementById('right-panel').style.display = page === 'discover' ? '' : 'none';
+            if (page === 'history') loadHistory();
+            if (page === 'admin') loadAdminData();
+        }
+
+        function setGreeting() {
+            const h = new Date().getHours();
+            const g = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
+            document.getElementById('discover-greeting').textContent = g;
+        }
+
+        // ===== COLD START =====
+        async function loadColdStart() {
+            try {
+                const res = await fetch(`${API}/cold-start`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                renderColdStart(data);
+            } catch (e) {
+                try {
+                    const r2 = await fetch(`${API}/recommend-many/${currentUser.user_id}?activity=0.5`);
+                    const songs = await r2.json();
+                    renderColdStart(songs.slice(0, 20));
+                } catch (e2) {
+                    document.getElementById('cold-start-grid').innerHTML = '<div class="empty-state">Could not load songs. Is the backend running?</div>';
+                }
+            }
+        }
+
+        function renderColdStart(songs) {
+            const grid = document.getElementById('cold-start-grid');
+            if (!songs || songs.length === 0) { grid.innerHTML = '<div class="empty-state">No songs found</div>'; return; }
+            grid.innerHTML = songs.map(s => {
+                const letter = (s.track_name || '?')[0].toUpperCase();
+                const colors = ['linear-gradient(135deg,#1db954,#0e5c28)', 'linear-gradient(135deg,#3b82f6,#1d4ed8)', 'linear-gradient(135deg,#f59e0b,#d97706)', 'linear-gradient(135deg,#ec4899,#be185d)', 'linear-gradient(135deg,#8b5cf6,#6d28d9)'];
+                const grad = colors[(s.track_name || '').charCodeAt(0) % colors.length];
+                return `<div class="cold-card" onclick="selectSong(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+        <div class="cold-art">${s.album_art ? `<img src="${s.album_art}" alt="" onerror="this.parentNode.style.background='${grad}';this.remove()" />` : `<div style="width:100%;height:100%;background:${grad};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:rgba(255,255,255,0.8)">${letter}</div>`}</div>
+        <div class="cold-name" title="${esc(s.track_name)}">${esc(s.track_name)}</div>
+        <div class="cold-artist">${esc(s.artists)}</div>
+        <div class="cold-genre">${esc(s.genre || '')}</div>
+      </div>`;
+            }).join('');
+        }
+
+        function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+        // ===== SELECT SONG =====
+        function selectSong(song) {
+            currentSong = song;
+            document.getElementById('cold-start-section').style.display = 'none';
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('player-main-section').style.display = 'block';
+            document.getElementById('learning-indicator').style.display = '';
+            updateNowPlayingPanel(song);
+            // Highlight in rec list
+            document.querySelectorAll('.song-row').forEach(r => {
+                r.classList.toggle('playing', r.dataset.trackId === String(song.track_id));
+            });
+            // Audio
+            const audio = document.getElementById('audio-player');
+            if (song.preview_url) {
+                audio.src = song.preview_url;
+                audio.volume = document.getElementById('vol-slider').value / 100;
+                audio.play().catch(() => { });
+                setPlayingState(true);
+            } else {
+                setPlayingState(false);
+            }
+        }
+
+        function updateNowPlayingPanel(song) {
+            document.getElementById('np-idle').style.display = 'none';
+            const npSec = document.getElementById('np-section');
+            npSec.style.display = 'flex';
+
+            document.getElementById('np-title').textContent = song.track_name || '—';
+            document.getElementById('np-artist').textContent = song.artists || '—';
+            document.getElementById('np-art-placeholder').textContent = (song.track_name || '♪')[0].toUpperCase();
+
+            const img = document.getElementById('np-art-img');
+            if (song.album_art) {
+                img.src = song.album_art;
+                img.style.display = 'block';
+                document.getElementById('np-art-placeholder').style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                document.getElementById('np-art-placeholder').style.display = 'flex';
+            }
+            document.getElementById('agent-badge-wrap').style.display = 'block';
+            resetProgress();
+        }
+
+        // ===== PLAY/PAUSE (no reward) =====
+        function togglePlayPause() {
+            const audio = document.getElementById('audio-player');
+            if (!currentSong) return;
+            if (audio.paused) {
+                audio.play().catch(() => { });
+                setPlayingState(true);
+            } else {
+                audio.pause();
+                setPlayingState(false);
+            }
+        }
+
+        function setPlayingState(playing) {
+            isPlaying = playing;
+            document.getElementById('play-icon').style.display = playing ? 'none' : 'block';
+            document.getElementById('pause-icon').style.display = playing ? 'block' : 'none';
+            if (playing) startProgressTimer();
+            else clearInterval(progressTimer);
+        }
+
+        // ===== NEXT / PREV =====
+        function nextSong() {
+            if (!currentRecList.length) return;
+            currentRecIndex = Math.min(currentRecIndex + 1, currentRecList.length - 1);
+            selectSong(currentRecList[currentRecIndex]);
+        }
+
+        function prevSong() {
+            if (!currentRecList.length) return;
+            currentRecIndex = Math.max(currentRecIndex - 1, 0);
+            selectSong(currentRecList[currentRecIndex]);
+        }
+
+        // ===== PROGRESS BAR =====
+        function resetProgress() {
+            clearInterval(progressTimer);
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('prog-current').textContent = '0:00';
+            document.getElementById('prog-total').textContent = '0:30';
+        }
+
+        function startProgressTimer() {
+            clearInterval(progressTimer);
+            const audio = document.getElementById('audio-player');
+            progressTimer = setInterval(() => {
+                if (!audio.duration) return;
+                const pct = (audio.currentTime / audio.duration) * 100;
+                document.getElementById('progress-fill').style.width = pct + '%';
+                document.getElementById('prog-current').textContent = formatTime(audio.currentTime);
+                document.getElementById('prog-total').textContent = formatTime(audio.duration);
+            }, 500);
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        document.getElementById('audio-player').addEventListener('ended', () => setPlayingState(false));
+        document.getElementById('audio-player').addEventListener('play', () => setPlayingState(true));
+        document.getElementById('audio-player').addEventListener('pause', () => setPlayingState(false));
+
+        function setVolume(val) {
+            document.getElementById('audio-player').volume = val / 100;
+        }
+
+        // ===== RECOMMENDATIONS =====
+        async function loadRecommendations() {
+            const list = document.getElementById('rec-list');
+            list.innerHTML = '<div class="loader"><div class="spinner"></div> Loading recommendations…</div>';
+            try {
+                const res = await fetch(`${API}/recommend-many/${currentUser.user_id}?activity=0.5`);
+                const songs = await res.json();
+                currentRecList = songs;
+                renderRecList(songs);
+            } catch (e) {
+                list.innerHTML = '<div class="empty-state">Failed to load recommendations</div>';
+            }
+        }
+
+        function renderRecList(songs) {
+            const list = document.getElementById('rec-list');
+            document.getElementById('rec-count-badge').textContent = songs.length ? `${songs.length} songs` : '';
+            if (!songs || songs.length === 0) { list.innerHTML = '<div class="empty-state">No recommendations yet</div>'; return; }
+            list.innerHTML = songs.map((s, i) => {
+                const art = s.album_art
+                    ? `<img src="${s.album_art}" alt="" onerror="this.style.display='none'" />`
+                    : `<span style="font-size:13px;font-weight:700;color:var(--text-hint)">${(s.track_name || '?')[0].toUpperCase()}</span>`;
+                const playing = currentSong && s.track_id === currentSong.track_id;
+                return `<div class="song-row${playing ? ' playing' : ''}" data-track-id="${s.track_id}" onclick="currentRecIndex=${i};selectSong(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+        <div class="row-num">${playing ? '▶' : i + 1}</div>
+        <div class="row-info">
+          <div class="row-art">${art}</div>
+          <div class="row-text">
+            <div class="row-name">${esc(s.track_name)}</div>
+            <div class="row-artist">${esc(s.artists)}</div>
+          </div>
+        </div>
+        <span class="genre-tag">${esc(s.genre || '')}</span>
+        <span class="pop-val" style="text-align:right">${s.popularity || ''}</span>
+      </div>`;
+            }).join('');
+        }
+
+        async function refreshRecs() {
+            const btn = document.getElementById('refresh-btn');
+            btn.classList.add('spinning');
+            await loadRecommendations();
+            btn.classList.remove('spinning');
+        }
+
+        // ===== FEEDBACK =====
+        async function sendFeedback(reward, action) {
+            if (!currentSong || !currentUser) return;
+            try {
+                await fetch(`${API}/feedback`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUser.user_id,
+                        track_id: currentSong.track_id,
+                        track_name: currentSong.track_name,
+                        reward,
+                        activity: 0.5
+                    })
+                });
+                interactionCount++;
+                updateAgentStatus();
+                showToast(actionLabel(action, reward));
+                const REFRESH_EVERY = 5;
+                const remaining = REFRESH_EVERY - (interactionCount % REFRESH_EVERY);
+                const counterEl = document.getElementById('refresh-counter');
+                if (interactionCount % REFRESH_EVERY === 0) {
+                    counterEl.textContent = '';
+                    setTimeout(() => {
+                        if (document.getElementById('player-main-section').style.display !== 'none') loadRecommendations();
+                    }, 400);
+                } else {
+                    counterEl.textContent = `Recs refresh in ${remaining} interaction${remaining !== 1 ? 's' : ''}`;
+                }
+            } catch (e) { showToast('Could not send feedback'); }
+        }
+
+        function actionLabel(action, reward) {
+            const map = { favourite: '★ Favourited! +3', complete: '✓ Completed +2', skip_half: '⏭ Half skipped +0.5', skip_early: '✕ Skipped early −1', remove: '⊘ Removed −2' };
+            return map[action] || `Feedback: ${reward}`;
+        }
+
+        function updateAgentStatus() {
+            document.getElementById('sidebar-agent-status').textContent = `${interactionCount} interaction${interactionCount !== 1 ? 's' : ''}`;
+            document.getElementById('interaction-count-label').textContent = `${interactionCount} total interaction${interactionCount !== 1 ? 's' : ''}`;
+        }
+
+        // ===== SEARCH =====
+        function onSearchInput(val) {
+            clearTimeout(searchTimer);
+            if (!val.trim()) {
+                document.getElementById('search-results').style.display = 'none';
+                if (currentSong || document.getElementById('player-main-section').style.display !== 'none') {
+                    document.getElementById('player-main-section').style.display = 'block';
+                    document.getElementById('cold-start-section').style.display = 'none';
+                } else {
+                    document.getElementById('cold-start-section').style.display = 'block';
+                }
+                return;
+            }
+            searchTimer = setTimeout(() => doSearch(val), 350);
+        }
+
+        async function doSearch(q) {
+            document.getElementById('cold-start-section').style.display = 'none';
+            document.getElementById('player-main-section').style.display = 'none';
+            document.getElementById('search-results').style.display = 'block';
+            const list = document.getElementById('search-results-list');
+            list.innerHTML = '<div class="loader"><div class="spinner"></div> Searching…</div>';
+            try {
+                const res = await fetch(`${API}/search/${currentUser.user_id}?q=${encodeURIComponent(q)}`);
+                const songs = await res.json();
+                if (!songs || songs.length === 0) { list.innerHTML = '<div class="empty-state">No results found</div>'; return; }
+                list.innerHTML = songs.map((s, i) => {
+                    const art = s.album_art
+                        ? `<img src="${s.album_art}" alt="" />`
+                        : `<span style="font-size:13px;font-weight:700;color:var(--text-hint)">${(s.track_name || '?')[0].toUpperCase()}</span>`;
+                    return `<div class="song-row" onclick="selectSong(${JSON.stringify(s).replace(/"/g, '&quot;')});document.getElementById('search-input').value='';document.getElementById('search-results').style.display='none';document.getElementById('player-main-section').style.display='block'">
+          <div class="row-num">${i + 1}</div>
+          <div class="row-info"><div class="row-art">${art}</div><div class="row-text"><div class="row-name">${esc(s.track_name)}</div><div class="row-artist">${esc(s.artists)}</div></div></div>
+          <span class="genre-tag">${esc(s.genre || '')}</span>
+          <span class="pop-val"></span>
+        </div>`;
+                }).join('');
+            } catch (e) { list.innerHTML = '<div class="empty-state">Search failed</div>'; }
+        }
+
+        // ===== HISTORY =====
+        async function loadHistory() {
+            const el = document.getElementById('history-list');
+            el.innerHTML = '<div class="loader"><div class="spinner"></div> Loading…</div>';
+            try {
+                const res = await fetch(`${API}/history/${currentUser.user_id}`);
+                const rows = await res.json();
+                if (!rows || rows.length === 0) { el.innerHTML = '<div class="empty-state">No history yet. Play some songs!</div>'; return; }
+                el.innerHTML = rows.map(r => {
+                    const pillCls = r.reward > 1 ? 'reward-pos' : r.reward < 0 ? 'reward-neg' : 'reward-neu';
+                    const sign = r.reward > 0 ? '+' : '';
+                    const t = r.played_at ? new Date(r.played_at).toLocaleString() : '';
+                    return `<div class="history-item">
+          <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.track_name)}</div></div>
+          <span class="reward-pill ${pillCls}">${sign}${r.reward}</span>
+          <span class="history-time">${t}</span>
+        </div>`;
+                }).join('');
+            } catch (e) { el.innerHTML = '<div class="empty-state">Failed to load history</div>'; }
+        }
+
+        // ===== ADMIN =====
+        let adminData = null;
+
+        async function loadAdminData() {
+            document.getElementById('admin-metrics').innerHTML = '<div class="loader" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>';
+            try {
+                const res = await fetch(`${API}/admin/stats`);
+                adminData = await res.json();
+                renderAdminMetrics(adminData);
+                renderCharts(adminData);
+                renderUsersTable(adminData);
+            } catch (e) {
+                document.getElementById('admin-metrics').innerHTML = '<div style="grid-column:1/-1;padding:2rem;color:var(--danger);font-size:13px">Failed to load admin data. Is the backend running?</div>';
+            }
+        }
+
+        function renderAdminMetrics(d) {
+            const users = d.users || [];
+            const totalPlayed = d.total_songs_played || 0;
+            const avgReward = users.length ? (users.reduce((a, u) => a + u.avg_reward, 0) / users.length).toFixed(2) : '—';
+            const totalFavs = users.reduce((a, u) => a + (u.reward_breakdown?.favourited || 0), 0);
+            const totalSkips = users.reduce((a, u) => a + (u.reward_breakdown?.skipped || 0), 0);
+            document.getElementById('admin-metrics').innerHTML = `
+      <div class="metric-card"><div class="metric-label">Total users</div><div class="metric-value">${d.total_users || 0}</div><div class="metric-sub">Active agents</div></div>
+      <div class="metric-card"><div class="metric-label">Songs played</div><div class="metric-value">${totalPlayed}</div><div class="metric-sub">Across all users</div></div>
+      <div class="metric-card"><div class="metric-label">Avg reward</div><div class="metric-value metric-trend-up">${avgReward}</div><div class="metric-sub">Per user average</div></div>
+      <div class="metric-card"><div class="metric-label">Favourited</div><div class="metric-value metric-trend-up">${totalFavs}</div><div class="metric-sub">${totalSkips} early skips</div></div>`;
+        }
+
+        function renderCharts(d) {
+            const users = d.users || [];
+            const colors = ['#1db954', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#e24b4a'];
+            if (rewardChart) rewardChart.destroy();
+            const maxLen = Math.max(...users.map(u => (u.rewards_over_time || []).length), 0);
+            rewardChart = new Chart(document.getElementById('reward-chart'), {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: maxLen }, (_, i) => i + 1),
+                    datasets: users.filter(u => u.rewards_over_time?.length > 0).map((u, i) => ({
+                        label: u.username, data: u.rewards_over_time,
+                        borderColor: colors[i % colors.length], backgroundColor: 'transparent',
+                        borderWidth: 2, pointRadius: 0, tension: 0.4
+                    }))
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 }, color: '#a0a0a0' } } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#606060', font: { size: 10 } }, title: { display: true, text: 'Interaction', color: '#606060', font: { size: 10 } } },
+                        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#606060', font: { size: 11 } }, title: { display: true, text: 'Reward', color: '#606060', font: { size: 10 } } }
+                    }
+                }
+            });
+            if (actionChart) actionChart.destroy();
+            const totals = users.reduce((acc, u) => { acc.completed += (u.reward_breakdown?.completed || 0); acc.favourited += (u.reward_breakdown?.favourited || 0); acc.half_skip += (u.reward_breakdown?.half_skip || 0); acc.skipped += (u.reward_breakdown?.skipped || 0); return acc; }, { completed: 0, favourited: 0, half_skip: 0, skipped: 0 });
+            actionChart = new Chart(document.getElementById('action-chart'), {
+                type: 'doughnut',
+                data: { labels: ['Completed', 'Favourited', 'Half skip', 'Skipped'], datasets: [{ data: [totals.completed, totals.favourited, totals.half_skip, totals.skipped], backgroundColor: ['#1db954', '#3b82f6', '#f59e0b', '#e24b4a'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 11 }, color: '#a0a0a0' } } }, cutout: '65%' }
+            });
+            if (userBarChart) userBarChart.destroy();
+            userBarChart = new Chart(document.getElementById('user-bar-chart'), {
+                type: 'bar',
+                data: { labels: users.map(u => u.username), datasets: [{ label: 'Avg reward', data: users.map(u => u.avg_reward), backgroundColor: users.map(u => u.avg_reward >= 1.5 ? '#1db954' : u.avg_reward >= 0.5 ? '#f59e0b' : '#e24b4a'), borderRadius: 4, borderSkipped: false }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: '#606060', font: { size: 11 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#606060', font: { size: 11 } } } } }
+            });
+        }
+
+        const FEATURE_META = {
+            energy: { label: 'Energy', low: 'calm', high: 'high energy', color: '#1db954', icon: '⚡' },
+            valence: { label: 'Mood', low: 'dark/sad', high: 'happy', color: '#3b82f6', icon: '😊' },
+            danceability: { label: 'Dance', low: 'non-danceable', high: 'very danceable', color: '#f59e0b', icon: '🕺' },
+            tempo: { label: 'Tempo', low: 'slow', high: 'fast', color: '#ec4899', icon: '🥁' },
+            loudness: { label: 'Loudness', low: 'quiet', high: 'loud', color: '#5dcaa5', icon: '🔊' },
+            acousticness: { label: 'Acoustic', low: 'electronic', high: 'acoustic', color: '#8b5cf6', icon: '🎸' },
+            instrumentalness: { label: 'Instrumental', low: 'vocal', high: 'instrumental', color: '#d85a30', icon: '🎹' },
+            speechiness: { label: 'Speech', low: 'pure music', high: 'rap/spoken', color: '#888780', icon: '🎤' },
+        };
+
+        function featureSummary(prefs) {
+            if (!prefs || !Object.keys(prefs).length) return '—';
+            return Object.entries(prefs).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 2).map(([k, v]) => {
+                const m = FEATURE_META[k]; const dir = v > 0 ? 'high' : 'low';
+                return `<span style="display:inline-flex;align-items:center;gap:3px;background:${m?.color}22;color:${m?.color};border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;margin-right:3px">${m?.icon || ''} ${dir} ${m?.label || k}</span>`;
+            }).join('');
+        }
+
+        function renderUsersTable(d) {
+            const users = d.users || [];
+            const tbody = document.getElementById('users-tbody');
+            if (!users.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-hint);padding:2rem">No user data yet</td></tr>'; return; }
+            tbody.innerHTML = users.map(u => {
+                const compPct = Math.round(((u.reward_breakdown?.completed || 0) / (u.total_songs || 1)) * 100);
+                return `<tr onclick="showUserDetail(${JSON.stringify(u).replace(/"/g, '&quot;')})" style="cursor:pointer">
+        <td><div style="display:flex;align-items:center;gap:8px"><div style="width:26px;height:26px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted)">${u.username ? u.username[0].toUpperCase() : '?'}</div><div><div style="font-weight:500;font-size:13px">${esc(u.username)}</div><div style="font-size:10px;color:var(--text-hint)">${u.total_songs} interactions</div></div></div></td>
+        <td><span style="font-weight:600;font-size:14px;color:${u.avg_reward >= 1.5 ? 'var(--accent)' : u.avg_reward < 0.5 ? 'var(--danger)' : 'var(--warn)'}">${u.avg_reward.toFixed(2)}</span><span style="font-size:10px;color:var(--text-hint);margin-left:3px">/ 3.0</span></td>
+        <td><div style="display:flex;align-items:center;gap:6px"><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${compPct}%"></div></div><span style="font-size:11px;color:var(--text-muted)">${compPct}%</span></div></td>
+        <td>${featureSummary(u.audio_preferences)}</td>
+        <td style="font-size:11px;color:var(--accent)">View →</td>
+      </tr>`;
+            }).join('');
+        }
+
+        function showUserDetail(u) {
+            const prefs = u.audio_preferences || {};
+            const vals = Object.values(prefs).map(Math.abs);
+            const maxVal = Math.max(...vals, 0.001);
+            let featureCards = '';
+            Object.entries(prefs).forEach(([k, v]) => {
+                const m = FEATURE_META[k] || { label: k, low: 'low', high: 'high', color: '#888', icon: '' };
+                const pct = Math.round((Math.abs(v) / maxVal) * 100);
+                const dir = v > 0 ? m.high : m.low;
+                const strength = pct > 70 ? 'Strong' : pct > 35 ? 'Moderate' : 'Weak';
+                featureCards += `<div style="background:var(--surface2);border:0.5px solid var(--border);border-radius:10px;padding:12px 14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:6px"><span style="font-size:14px">${m.icon}</span><span style="font-size:12px;font-weight:500">${m.label}</span></div>
+          <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:${m.color}25;color:${m.color}">${strength}</span>
+        </div>
+        <div style="height:4px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-bottom:7px"><div style="height:100%;width:${pct}%;background:${m.color};border-radius:4px"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;font-weight:500;color:${m.color}">${v > 0 ? '▲' : '▼'} ${dir}</span>
+          <span style="font-size:10px;font-family:monospace;color:var(--text-hint)">θ=${v.toFixed(4)}</span>
+        </div>
+      </div>`;
+            });
+            const bd = u.reward_breakdown || {};
+            const breakdownItems = [{ label: 'Completed', count: bd.completed || 0, color: '#1db954', reward: '+2' }, { label: 'Favourited', count: bd.favourited || 0, color: '#3b82f6', reward: '+3' }, { label: 'Half skip', count: bd.half_skip || 0, color: '#f59e0b', reward: '+0.5' }, { label: 'Skipped', count: bd.skipped || 0, color: '#e24b4a', reward: '-1' }, { label: 'Removed', count: bd.removed || 0, color: '#a32d2d', reward: '-2' }];
+            let breakdownHtml = breakdownItems.filter(b => b.count > 0).map(b => `<div style="text-align:center;padding:6px 10px;background:${b.color}18;border-radius:7px;border:0.5px solid ${b.color}35"><div style="font-size:14px;font-weight:700;color:${b.color}">${b.count}</div><div style="font-size:10px;color:var(--text-hint)">${b.label}</div><div style="font-size:10px;font-family:monospace;color:${b.color}">${b.reward}</div></div>`).join('');
+            let songsHtml = (u.recent_songs || []).length ? (u.recent_songs || []).map(s => { const col = s.reward >= 2 ? 'var(--accent)' : s.reward >= 0 ? 'var(--warn)' : 'var(--danger)'; const sign = s.reward > 0 ? '+' : ''; return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface);border-radius:6px"><div style="font-size:12px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.name)}</div><span style="font-size:11px;font-family:monospace;font-weight:600;color:${col};margin-left:10px">${sign}${s.reward}</span></div>`; }).join('') : '<div style="color:var(--text-hint);font-size:12px;padding:8px">No recent interactions</div>';
+            document.getElementById('user-detail-section').innerHTML = `
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:1.5rem;margin-top:1.25rem">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:0.5px solid var(--border)">
+          <div style="width:38px;height:38px;border-radius:50%;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--text-muted)">${u.username ? u.username[0].toUpperCase() : '?'}</div>
+          <div><div style="font-size:16px;font-weight:600;font-family:'Syne',sans-serif">${esc(u.username)}</div><div style="font-size:11px;color:var(--text-hint)">${u.total_songs} songs · avg <span style="font-weight:600;color:var(--accent)">${u.avg_reward.toFixed(2)}</span></div></div>
+          <div style="margin-left:auto;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">${breakdownHtml}</div>
+        </div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.75rem">Audio feature preferences</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-bottom:1.25rem">${featureCards}</div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Recent interactions</div>
+        <div style="display:flex;flex-direction:column;gap:4px">${songsHtml}</div>
+      </div>`;
+            document.getElementById('user-detail-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ===== TOAST =====
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+    </script>
+</body>
+
+</html>
