@@ -4,8 +4,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from pydantic import BaseModel
 from passlib.context import CryptContext
-from backend.database import get_db, engine
-from backend.models import Base
+from backend.database import get_db, engine, Base
+from backend.models import User, ListenHistory
 from backend.agent import load_agent, save_agent
 from backend.context import build_context_vector
 from datetime import datetime
