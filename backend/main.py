@@ -3,10 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from passlib.context import CryptContext
-from database import get_db, engine
-from models import Base, User, ListenHistory
-from agent import load_agent, save_agent
-from context import build_context_vector
+from backend.database import get_db, engine
+from backend.models import Base, User, ListenHistory
+from backend.agent import load_agent, save_agent
+from backend.context import build_context_vector
 from datetime import datetime
 import pandas as pd
 import numpy as np
